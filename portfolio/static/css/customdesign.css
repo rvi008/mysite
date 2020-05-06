@@ -1,0 +1,54 @@
+body {
+  padding-top: 2rem;
+}
+
+.form-control {
+  margin-right: 2px;
+}
+
+.up {
+  color: #093;
+}
+
+.down {
+  color: #d14836;
+}
+
+.form-control {
+    display: block;
+    width: 100%;
+    padding: .5rem .75rem;
+    font-size: 0.75rem;
+    line-height: 1.15;
+}
+
+th {
+    background-color: #01579b;
+    color: white;
+}
+
+.navbar {
+    background-color: #01579b;
+}
+
+.jumbotron {
+    background-color: #eceff1;
+}
+
+.navbar-brand {
+  padding: 0px;
+}
+
+.navbar-brand>img {
+  height: 100%;
+  padding: 15px;
+  width: auto;
+}
+
+.table-nonfluid {
+   width: auto !important;
+}
+
+.table td, th {
+   text-align: center;
+}

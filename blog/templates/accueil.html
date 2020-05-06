@@ -1,0 +1,56 @@
+{% extends "base.html" %} 
+{% block content %}
+{% load static %}
+<link rel="stylesheet" type="text/css" href="{% static 'blog/style.css' %}">
+<style>
+    body {
+        font-family: "Roboto", sans-serif;
+        font-size: 18px;
+        background-color: #fdfdfd;
+    }
+    
+    .head_text {
+        color: white;
+    }
+
+    .accueil {
+	background-color: #fdfdfd;
+	margin-top: 15px;
+	padding-top: 15px;
+	padding-left: 15px;
+
+
+	}
+</style>
+<header class="masthead">
+    <div class="overlay"></div>
+    <div class="container">
+        <div class="row">
+            <div class=" col-md-10 col-md-12 mx-auto">
+                <div class="site-heading">
+                    <h3 class="site-heading my-0 mt-1 text-white"> Raphaël Vignes</h3>
+                    <p class="text-light">La connaissance rend libre &nbsp
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</header>
+<body>
+	<div class="container">
+  		<div class="row">
+    		<div class="col-md-20 accueil mb-1  mt-5 left top">
+				<h1>Présentation du blog</h1>
+				<p style="text-align:justify;">Ce blog a pour but de partager de l'information, via le décryptage 			de l'actualité économique, politique et financière. Parfois via des articles de chroniques ou via 			des articles plus en retrait de l'actualité avec une perspective plus 'haute'.</p>
+				<p style="text-align:justify;">Il se veut être le support de notre opinion, qui peut paraître 			tranchée, mais dans la plus pure tradition Française, l'analyse est orientée, comme toute analyse, 			y compris celle de la presse <em>mainstream.</em></p>
+				<p style="text-align:justify;">Notre inspiration provient de la lecture d'ouvrages et d'articles 			divers et variés, d'économistes et de financiers d'horizons différents. Nos favoris sont <a href="			http://institutdeslibertes.org">Charles Gave</a>, <a href="https://www.les-crises.fr/mot-cle/			jacques-sapir/">Jacques Sapir</a>, <a href="https://www.patreon.com/ProfSteveKeen">Steve Keen</a>, 			<a href="https://brunobertez.com/">Bruno Bertez</a>, <a href="http://chevallier.biz/">			Jean-Pierre Chevallier</a> et <a href="https://professorwerner.org/"> Richard Werner</a> qui ont tous en commun de ne pas être de la pensée économique orthodoxe.			</p>
+				L'économie et la finance appartiennent à tout le monde car elles font partie des sciences qui 			gouvernent nos vies.
+				<p style="text-align:justify;">La plupart des pistes d'investissements partagées sont des pistes 			que nous suivons personnellement, car lorsque l'on partage un conseil, il convient de <em>jouer sa 			peau</em> en l'appliquant pour soit même.</p>
+				<em>Bonne lecture,</em>
+				<br>
+				<em>Raphaël Vignes</em>
+			</div>
+		</div>
+	</div>
+</body>
+{%endblock%}

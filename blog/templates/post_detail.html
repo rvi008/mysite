@@ -1,0 +1,56 @@
+{% extends 'base.html' %} {% block content %}
+{% load static %}
+<style> 
+.site-heading
+{
+    margin-left: 0px;
+}
+.site-heading.h3
+{
+    font-size: 1.75rem
+}
+.sous-titre
+{
+    margin-left: 0px;
+    font-size: 105%;
+}
+.detail
+{
+    margin-top: 1px;
+    padding-top: 0px;
+}
+.bandeau
+{
+    margin-top: 2px;
+}
+    ::-webkit-scrollbar {
+    display: none;}
+</style>
+<header class="masthead bandeau">
+    <div class="overlay"></div>
+    <div class="container detail">
+        <div class="row">
+            <div class=" col-md-10 titre col-md-12 mx-auto">
+                <div class="site-heading">
+                    <h3 class="site-heading my-0 mt-1 text-white"> Raphaël Vignes</h3>
+                    <p class="text-light sous-titre">La connaissance rend libre &nbsp
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</header>
+<link rel="stylesheet" type="text/css" href="{% static 'blog/style.css' %}">
+<div class="container">
+  <div class="row">
+        <div class="col-md-16 mt-5 left">
+      <div class="card-body">
+        <h1>{% block title %} {{ object.title }} {% endblock title %}</h1>
+        <p class=" text-muted">{{ post.author }} | {{ post.created_on }}</p>
+        <p class="card-text ">{{ object.content | safe }}</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock content %}

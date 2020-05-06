@@ -1,0 +1,81 @@
+{% extends "base.html" %} 
+{% block content %}
+{% load static %}
+<style>
+    body {
+        font-family: "Roboto", sans-serif;
+        font-size: 18px;
+        background-color: #fdfdfd;
+        padding: 0px;
+    }
+    ::-webkit-scrollbar {
+    display: none;}
+    
+    .head_text {
+        color: white;
+    }
+    
+    .card {
+        box-shadow: 0 16px 48px #E3E7EB;
+        margin-right: 10px;
+    }
+    .twitter
+    {
+        padding-top: 60px;
+        margin-left: 15px;
+    }
+    .twitter-timeline
+    {
+        float: right;
+    }
+
+
+</style>
+<header class="masthead">
+    <div class="overlay"></div>
+    <div class="container">
+        <div class="row">
+            <div class=" col-md-10 col-md-12 mx-auto">
+                <div class="site-heading">
+                    <h3 class="site-heading my-0 mt-1 text-white"> Raphaël Vignes</h3>
+                    <p class="text-light">La connaissance rend libre &nbsp
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</header>
+<div class="twitter">
+            <a class="twitter-timeline" data-width="350" data-height="2500" href="https://twitter.com/RaphaelVignes?ref_src=twsrc%5Etfw">Tweets by RaphaelVignes</a> <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
+</div>
+<div class="container">
+    <div class="row">
+        <div class="col-md-16 left">
+            {% for post in post_list %}
+            <div class="card mb-2">
+                <div class="card-body">
+                    <h2 class="card-title">{{ post.title }}</h2>
+                    <p class="card-text text-muted h6">{{ post.author }} | {{ post.created_on}} </p>
+                    <p class="card-text">{{post.content|slice:":300"|safe }}...</p>
+                    <a href="{% url 'post_detail' post.slug  %}" class="btn btn-outline-dark">Lire la suite &rarr;</a>
+                </div>
+            </div>
+            {% endfor %}
+            <div class="pagination">
+            <span class="step-links">
+            {% if page_obj.has_previous %}
+            <a href="?page=1">&laquo; first</a>
+            <a href="?page={{ page_obj.previous_page_number }}">previous</a>
+            {% endif %}
+            <span class="current">
+            Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}.
+            </span>
+            {% if page_obj.has_next %}
+            <a href="?page={{ page_obj.next_page_number }}">next</a>
+            <a href="?page={{ page_obj.paginator.num_pages }}">last &raquo;</a>
+        {% endif %}
+    </span>
+</div>
+        </div>
+</div>
+{%endblock%}
