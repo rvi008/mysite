@@ -25,7 +25,7 @@ CL_URLS = {
 
 CL_NAVIGATION = {
 	"OCTOBER":{"login":{"descriptor":"id","desc_values":["ember566", "ember576", "ember613"]},
-	"home":{"descriptor":"id", "desc_values":["ember899"]},
+	"home":{"descriptor":"id", "desc_values":["ember1337"]},
 	"extract":{"descriptor":"class", "desc_values":["//h4"], "item_num":-1}},
 
 	"ENTREPRETEURS":{"login":{"descriptor":"id","desc_values":["username", "password", "_submit"]},

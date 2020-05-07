@@ -4,7 +4,7 @@ import decimal
 import logging
 from .models import Stocks
 from .forms import AddStockForm
-from .controllers import retrieve_mslqd, retrieve_yf, retrieve_bgf, convert_currency, retrieve_gold, retrieve_silver, retrieve_cl, retrieve_crypto
+from portfolio.controllers import *
 import json
 from django.conf import settings
 import redis

@@ -77,16 +77,5 @@ class ControllersTestCase(TestCase):
         stock_name, stock_price, stock_currency = retrieve_gold("OCTOBER", self.redis_instance) #Second Run redis /!\ TTL 28800
         self.assertEqual(stock_name,"OCTOBER") 
         self.assertNotEqual(stock_price,0)
-        self.assertEqual(stock_currency,"eur")    	
-
-    def test_retrieve_crypto(self):
-        stock_name, stock_price, stock_currency = retrieve_crypto(self.redis_instance) #First Run Scrapping
-        self.assertEqual(stock_name,"Cryptomonnaies") 
-        self.assertNotEqual(stock_price,0)
-        self.assertEqual(stock_currency,"usd")
-        stock_name, stock_price, stock_currency = retrieve_crypto(self.redis_instance) #Second Run redis 
-        self.assertEqual(stock_name,"Cryptomonnaies") 
-        self.assertNotEqual(stock_price,0)
-        self.assertEqual(stock_currency,"usd")  
-
+        self.assertEqual(stock_currency,"eur")
 

@@ -29,9 +29,9 @@
             <tr>
                 <td data-title="ID">{{ stock.symbol }}</td>
                 <td data-title="Name">{{ stock.name }}</td>
-                <td data-title="Price">{{ stock.price|floatformat:4 }}</td>
-                <td data-title="Owned">{{ stock.stocks_owned }}</td>
-                <td data-title="Bprice">{{ stock.buying_price|floatformat:4 }}</td>
+                <td data-title="Price">{{ stock.price|floatformat:2 }}</td>
+                <td data-title="Owned">{{ stock.stocks_owned|floatformat:2 }}</td>
+                <td data-title="Bprice">{{ stock.buying_price|floatformat:2 }}</td>
 
                 {% if stock.balance > 0 %}
                     <td class='up' data-title="Balance">+{{ stock.balance|floatformat:1 }}</td>
