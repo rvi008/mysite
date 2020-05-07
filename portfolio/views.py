@@ -189,47 +189,50 @@ def update_stock_table(request):
         stocks = Stocks.objects.all().order_by('symbol')[:30]  # This returns queryset
 
         for stock in stocks:
+            try:
 
-            if "LU0904783114" in stock.symbol:
-                _, stock.price, currency = retrieve_mslqd(redis_instance)
-            elif "LU0" in stock.symbol:
-                _, stock.price, currency = retrieve_bgf(stock.symbol, redis_instance)
-            elif "CASH" in stock.symbol:
-                currency = stock.symbol[-3:].lower()
-            elif "OR" in stock.symbol:
-                _, stock.price, currency = retrieve_gold(stock.symbol, redis_instance)
-            elif "AG" in stock.symbol:
-                _, stock.price, currency = retrieve_silver(stock.symbol, redis_instance)
-            elif "CL" in stock.symbol:
-                _, stock.price, currency = retrieve_cl(stock.symbol.replace("CL",""), redis_instance)
-            elif "CRYPTO" in stock.symbol:
-                _, stock.price, currency = retrieve_crypto(redis_instance)
-            else:
-                _, stock.price, currency = retrieve_yf(stock.symbol, redis_instance)
+                if "LU0904783114" in stock.symbol:
+                    _, stock.price, currency = retrieve_mslqd(redis_instance)
+                elif "LU0" in stock.symbol:
+                    _, stock.price, currency = retrieve_bgf(stock.symbol, redis_instance)
+                elif "CASH" in stock.symbol:
+                    currency = stock.symbol[-3:].lower()
+                elif "OR" in stock.symbol:
+                    _, stock.price, currency = retrieve_gold(stock.symbol, redis_instance)
+                elif "AG" in stock.symbol:
+                    _, stock.price, currency = retrieve_silver(stock.symbol, redis_instance)
+                elif "CL" in stock.symbol:
+                    _, stock.price, currency = retrieve_cl(stock.symbol.replace("CL",""), redis_instance)
+                elif "CRYPTO" in stock.symbol:
+                    _, stock.price, currency = retrieve_crypto(redis_instance)
+                else:
+                    _, stock.price, currency = retrieve_yf(stock.symbol, redis_instance)
+        
+                if currency != 'eur':
+                    balance_before = (stock.stocks_owned * decimal.Decimal(stock.price)) - (decimal.Decimal(stock.stocks_owned) * decimal.Decimal(stock.buying_price))
+                    rate = convert_currency(currency, redis_instance) 
+                    balance = balance_before * decimal.Decimal(rate)
+                    valuation = decimal.Decimal(stock.price) * decimal.Decimal(stock.stocks_owned)  * decimal.Decimal(rate)
+                else:
+                    balance = (float(stock.stocks_owned) * float(stock.price)) - (float(stock.stocks_owned) * float(stock.buying_price))
+                    valuation = decimal.Decimal(stock.price) * decimal.Decimal(stock.stocks_owned)
+    
+                stock.balance = balance
+                stock.valuation = valuation
+                stock.save(update_fields=['price', 'balance', 'valuation'])  # do not create new object in db,
+                # update current lines
+                total_balance, total_valuation = np.sum([s.balance for s in stock_list]), np.sum([s.valuation for s in stock_list])
+                context = {
+                'stock_list': stock_list,
+                'total_balance': total_balance,
+                'total_valuation': total_valuation,
+                'today_date': today_date
+                    }      
+                logger.info('Refreshing stock list')
 
-            if currency != 'eur':
-                balance_before = (stock.stocks_owned * decimal.Decimal(stock.price)) - (decimal.Decimal(stock.stocks_owned) * decimal.Decimal(stock.buying_price))
-                rate = convert_currency(currency, redis_instance) 
-                balance = balance_before * decimal.Decimal(rate)
-                valuation = decimal.Decimal(stock.price) * decimal.Decimal(stock.stocks_owned)  * decimal.Decimal(rate)
-            else:
-                balance = (float(stock.stocks_owned) * float(stock.price)) - (float(stock.stocks_owned) * float(stock.buying_price))
-                valuation = decimal.Decimal(stock.price) * decimal.Decimal(stock.stocks_owned)
-
-            stock.balance = balance
-            stock.valuation = valuation
-            stock.save(update_fields=['price', 'balance', 'valuation'])  # do not create new object in db,
-            # update current lines
-            total_balance, total_valuation = np.sum([s.balance for s in stock_list]), np.sum([s.valuation for s in stock_list])
-            context = {
-            'stock_list': stock_list,
-            'total_balance': total_balance,
-            'total_valuation': total_valuation,
-            'today_date': today_date
-            }  
-
-        logger.info('Refreshing stock list')
-
+            except: #If one update fails, abort the update process and retrieve from DB
+                logger.info('Update Failed for %s' % str(stock.symbol))
+                
         return render(request, 'stockInformation/stocks.html', context)
 
 @api_view(['GET', 'POST'])
