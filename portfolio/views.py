@@ -4,8 +4,15 @@ import decimal
 import logging
 from .models import Stocks
 from .forms import AddStockForm
-from .controllers import retrieve_mslqd, retrieve_yf, retrieve_bgf, convert_currency
+from .controllers import retrieve_mslqd, retrieve_yf, retrieve_bgf, convert_currency, retrieve_gold, retrieve_silver, retrieve_cl, retrieve_crypto
+import json
+from django.conf import settings
+import redis
+from rest_framework.decorators import api_view
+from rest_framework import status
+from rest_framework.response import Response
 
+redis_instance = redis.StrictRedis(host=settings.REDIS_HOST, port=settings.REDIS_PORT, db=0)
 
 # CREATING LOGGER
 logger = logging.getLogger('LOG')
@@ -35,7 +42,7 @@ def update_stock_table(request):
     :return: stocks.html with context dictionary that has all the stock options that you have added to portfolio
     """
 
-    stock_list = Stocks.objects.order_by('price')[:30]
+    stock_list = Stocks.objects.order_by('symbol')[:30]
     today_date = time.strftime("%d.%m.%Y %H:%M")
 
     if 'add_stock' in request.POST:
@@ -47,7 +54,7 @@ def update_stock_table(request):
 
                 if not Stocks.objects.filter(symbol=new_stock.upper()):  # stock not already in portfolio
 
-                    logger.info('Adding ' + new_stock.upper() + ' to stock portfolio')
+                    logger.info('Adding ' + new_stock.upper() + ' to portfolio')
 
                     try:  # try to add stock to portfolio
 
@@ -62,9 +69,22 @@ def update_stock_table(request):
                             new_stock_price = form.cleaned_data['buying_price']
                             stocks_owned = 1
                             currency = new_stock[-3:].lower()
+
+                        elif "OR" in new_stock:
+                            new_stock_name, new_stock_price, currency = retrieve_gold(new_stock)
+
+                        elif "AG" in new_stock:
+                            new_stock_name, new_stock_price, currency = retrieve_silver(new_stock)
+
+                        elif "CL" in new_stock:
+                            new_stock_name, new_stock_price, currency = retrieve_cl(new_stock.replace("CL",""))
+
+                        elif "CRYPTO" in new_stock:
+                            new_stock_name, new_stock_price, currency = retrieve_crypto()
+
                         else:
                             new_stock_name, new_stock_price, currency = retrieve_yf(new_stock)
-                        
+                            
                         stocks_owned = form.cleaned_data['stocks_bought']
                         buying_price = form.cleaned_data['buying_price']
 
@@ -85,6 +105,7 @@ def update_stock_table(request):
                         bprice = stock.buying_price
                         price = stock.price
                         valuation = stock.valuation
+
                         if currency != 'eur':
                             balance = decimal.Decimal(((stocks * price) - (stocks * bprice))) * decimal.Decimal(convert_currency(currency))
                             valuation = valuation * decimal.Decimal(convert_currency(currency))
@@ -103,7 +124,7 @@ def update_stock_table(request):
 
                     except Exception as e:  # if symbol is not correct
                         pass
-                        error_message = "Insert correct symbol!"
+                        error_message = "Error in the creation process"
                         logging.error("Exception %s" % str(e))
 
                         context = {
@@ -155,7 +176,7 @@ def update_stock_table(request):
 
     else:  # if there was no POST request - the whole portfolio should be updated
 
-        stocks = Stocks.objects.all()  # This returns queryset
+        stocks = Stocks.objects.all().order_by('symbol')[:30]  # This returns queryset
 
         for stock in stocks:
 
@@ -165,6 +186,14 @@ def update_stock_table(request):
                 _, stock.price, currency = retrieve_bgf(stock.symbol)
             elif "CASH" in stock.symbol:
                 currency = stock.symbol[-3:].lower()
+            elif "OR" in stock.symbol:
+                _, stock.price, currency = retrieve_gold(stock.symbol)
+            elif "AG" in stock.symbol:
+                _, stock.price, currency = retrieve_silver(stock.symbol)
+            elif "CL" in stock.symbol:
+                _, stock.price, currency = retrieve_cl(stock.symbol.replace("CL",""))
+            elif "CRYPTO" in stock.symbol:
+                _, stock.price, currency = retrieve_crypto()
             else:
                 _, stock.price, currency = retrieve_yf(stock.symbol)
 
@@ -191,9 +220,83 @@ def update_stock_table(request):
 
         return render(request, 'stockInformation/stocks.html', context)
 
+@api_view(['GET', 'POST'])
+def manage_items(request, *args, **kwargs):
+    if request.method == 'GET':
+        items = {}
+        count = 0
+        for key in redis_instance.keys("*"):
+            items[key.decode("utf-8")] = redis_instance.get(key)
+            count += 1
+        response = {
+            'count': count,
+            'msg': f"Found {count} items.",
+            'items': items
+        }
+        return Response(response, status=200)
+    elif request.method == 'POST':
+        item = json.loads(request.body)
+        key = list(item.keys())[0]
+        value = item[key]
+        redis_instance.set(key, value)
+        response = {
+            'msg': f"{key} successfully set to {value}"
+        }
+        return Response(response, 201)
 
-def crowdfunding(request):
-    context = {
-    }
 
-    return render(request, 'stockInformation/crowdfunding.html', context)
+@api_view(['GET', 'PUT', 'DELETE'])
+def manage_item(request, *args, **kwargs):
+    if request.method == 'GET':
+        if kwargs['key']:
+            value = redis_instance.get(kwargs['key'])
+            if value:
+                response = {
+                    'key': kwargs['key'],
+                    'value': value,
+                    'msg': 'success'
+                }
+                return Response(response, status=200)
+            else:
+                response = {
+                    'key': kwargs['key'],
+                    'value': None,
+                    'msg': 'Not found'
+                }
+                return Response(response, status=404)
+    elif request.method == 'PUT':
+        if kwargs['key']:
+            request_data = json.loads(request.body)
+            new_value = request_data['new_value']
+            value = redis_instance.get(kwargs['key'])
+            if value:
+                redis_instance.set(kwargs['key'], new_value)
+                response = {
+                    'key': kwargs['key'],
+                    'value': value,
+                    'msg': f"Successfully updated {kwargs['key']}"
+                }
+                return Response(response, status=200)
+            else:
+                response = {
+                    'key': kwargs['key'],
+                    'value': None,
+                    'msg': 'Not found'
+                }
+                return Response(response, status=404)
+
+    elif request.method == 'DELETE':
+        if kwargs['key']:
+            result = redis_instance.delete(kwargs['key'])
+            if result == 1:
+                response = {
+                    'msg': f"{kwargs['key']} successfully deleted"
+                }
+                return Response(response, status=404)
+            else:
+                response = {
+                    'key': kwargs['key'],
+                    'value': None,
+                    'msg': 'Not found'
+                }
+                return Response(response, status=404)

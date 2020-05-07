@@ -43,7 +43,9 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'django_summernote',
     'blog',
-    'portfolio'
+    'portfolio',
+    'rest_framework',
+    'api'
 ]
 
 MIDDLEWARE = [
@@ -106,7 +108,8 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-
+REDIS_HOST = 'localhost'
+REDIS_PORT = 6379
 # Internationalization
 # https://docs.djangoproject.com/en/3.0/topics/i18n/
 
