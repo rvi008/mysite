@@ -8,8 +8,9 @@ GOLD_COINS = {
     "OR20FR":"French/Austrian/Swiss/Hungarian/Italian/Belgian 20 Francs",
     "OR10FR":"French/Swiss/Hungarian/Italian 10 Francs"
 }
-SILVER_URL = ["https://www.achat-or-et-argent.fr/argent/5/pieces-francaises",
-    "https://www.achat-or-et-argent.fr/argent/9/pieces-modernes"]
+SILVER_URL = {"AG1F":"https://www.achat-or-et-argent.fr/argent/5/pieces-francaises",
+              "AG50F":"https://www.achat-or-et-argent.fr/argent/5/pieces-francaises",
+              "AGPHIL":"https://www.achat-or-et-argent.fr/argent/9/pieces-modernes"}
 
 SILVER_COINS = {
 	"AG1F":"1 Franc Semeuse 1898 - 1920",

@@ -11,8 +11,9 @@ import redis
 from rest_framework.decorators import api_view
 from rest_framework import status
 from rest_framework.response import Response
+import pickle
 
-redis_instance = redis.StrictRedis(host=settings.REDIS_HOST, port=settings.REDIS_PORT, db=0)
+redis_instance = redis.StrictRedis(host=settings.REDIS_HOST, port=settings.REDIS_PORT, db=0, decode_responses=True)
 
 # CREATING LOGGER
 logger = logging.getLogger('LOG')
@@ -59,10 +60,10 @@ def update_stock_table(request):
                     try:  # try to add stock to portfolio
 
                         if "LU0904783114" in new_stock:
-                            new_stock_name, new_stock_price, currency = retrieve_mslqd()
+                            new_stock_name, new_stock_price, currency = retrieve_mslqd(redis_instance)
 
                         elif "LU0" in new_stock:
-                            new_stock_name, new_stock_price, currency = retrieve_bgf(new_stock)
+                            new_stock_name, new_stock_price, currency = retrieve_bgf(new_stock, redis_instance)
 
                         elif "CASH" in new_stock:
                             new_stock_name = new_stock
@@ -71,19 +72,19 @@ def update_stock_table(request):
                             currency = new_stock[-3:].lower()
 
                         elif "OR" in new_stock:
-                            new_stock_name, new_stock_price, currency = retrieve_gold(new_stock)
+                            new_stock_name, new_stock_price, currency = retrieve_gold(new_stock, redis_instance)
 
                         elif "AG" in new_stock:
-                            new_stock_name, new_stock_price, currency = retrieve_silver(new_stock)
+                            new_stock_name, new_stock_price, currency = retrieve_silver(new_stock, redis_instance)
 
                         elif "CL" in new_stock:
-                            new_stock_name, new_stock_price, currency = retrieve_cl(new_stock.replace("CL",""))
+                            new_stock_name, new_stock_price, currency = retrieve_cl(new_stock.replace("CL",""), redis_instance)
 
                         elif "CRYPTO" in new_stock:
-                            new_stock_name, new_stock_price, currency = retrieve_crypto()
+                            new_stock_name, new_stock_price, currency = retrieve_crypto(redis_instance)
 
                         else:
-                            new_stock_name, new_stock_price, currency = retrieve_yf(new_stock)
+                            new_stock_name, new_stock_price, currency = retrieve_yf(new_stock, redis_instance)
                             
                         stocks_owned = form.cleaned_data['stocks_bought']
                         buying_price = form.cleaned_data['buying_price']
@@ -107,8 +108,8 @@ def update_stock_table(request):
                         valuation = stock.valuation
 
                         if currency != 'eur':
-                            balance = decimal.Decimal(((stocks * price) - (stocks * bprice))) * decimal.Decimal(convert_currency(currency))
-                            valuation = valuation * decimal.Decimal(convert_currency(currency))
+                            balance = decimal.Decimal(((stocks * price) - (stocks * bprice))) * decimal.Decimal(convert_currency(currency, redis_instance))
+                            valuation = valuation * decimal.Decimal(convert_currency(currency, redis_instance))
                         else:
                             balance = (stocks * price) - (stocks * bprice)
                         stock.balance = balance
@@ -181,25 +182,25 @@ def update_stock_table(request):
         for stock in stocks:
 
             if "LU0904783114" in stock.symbol:
-                _, stock.price, currency = retrieve_mslqd()
+                _, stock.price, currency = retrieve_mslqd(redis_instance)
             elif "LU0" in stock.symbol:
-                _, stock.price, currency = retrieve_bgf(stock.symbol)
+                _, stock.price, currency = retrieve_bgf(stock.symbol, redis_instance)
             elif "CASH" in stock.symbol:
                 currency = stock.symbol[-3:].lower()
             elif "OR" in stock.symbol:
-                _, stock.price, currency = retrieve_gold(stock.symbol)
+                _, stock.price, currency = retrieve_gold(stock.symbol, redis_instance)
             elif "AG" in stock.symbol:
-                _, stock.price, currency = retrieve_silver(stock.symbol)
+                _, stock.price, currency = retrieve_silver(stock.symbol, redis_instance)
             elif "CL" in stock.symbol:
-                _, stock.price, currency = retrieve_cl(stock.symbol.replace("CL",""))
+                _, stock.price, currency = retrieve_cl(stock.symbol.replace("CL",""), redis_instance)
             elif "CRYPTO" in stock.symbol:
-                _, stock.price, currency = retrieve_crypto()
+                _, stock.price, currency = retrieve_crypto(redis_instance)
             else:
-                _, stock.price, currency = retrieve_yf(stock.symbol)
+                _, stock.price, currency = retrieve_yf(stock.symbol, redis_instance)
 
             if currency != 'eur':
                 balance_before = (stock.stocks_owned * decimal.Decimal(stock.price)) - (decimal.Decimal(stock.stocks_owned) * decimal.Decimal(stock.buying_price))
-                rate = convert_currency(currency) 
+                rate = convert_currency(currency, redis_instance) 
                 balance = balance_before * decimal.Decimal(rate)
                 valuation = decimal.Decimal(stock.price) * decimal.Decimal(stock.stocks_owned)  * decimal.Decimal(rate)
             else:
@@ -226,7 +227,7 @@ def manage_items(request, *args, **kwargs):
         items = {}
         count = 0
         for key in redis_instance.keys("*"):
-            items[key.decode("utf-8")] = redis_instance.get(key)
+            items[key] = redis_instance.hgetall(key)
             count += 1
         response = {
             'count': count,
@@ -238,7 +239,8 @@ def manage_items(request, *args, **kwargs):
         item = json.loads(request.body)
         key = list(item.keys())[0]
         value = item[key]
-        redis_instance.set(key, value)
+        #redis_instance.set(key, value)
+        redis_instance.hset(name, key, value, mapping)
         response = {
             'msg': f"{key} successfully set to {value}"
         }
@@ -249,7 +251,7 @@ def manage_items(request, *args, **kwargs):
 def manage_item(request, *args, **kwargs):
     if request.method == 'GET':
         if kwargs['key']:
-            value = redis_instance.get(kwargs['key'])
+            value = redis_instance.hgetall(kwargs['key'])
             if value:
                 response = {
                     'key': kwargs['key'],
