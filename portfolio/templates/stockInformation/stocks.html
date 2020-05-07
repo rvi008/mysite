@@ -7,7 +7,6 @@
       </div>
     </div>
     {% endblock %}
-
     <div class="container">
 
       {% block content %}
@@ -51,6 +50,20 @@
                 </td>
             </tr>
             {% endfor %}
+            <tfoot>
+                <td data-title="Total" style="font-size:27px;">Total</td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                {% if total_balance > 0 %}
+                    <td class='up' data-title="TotalBal">+{{ total_balance|floatformat:1 }}</td>
+                {% else %}
+                    <td class="down" data-title="TotalBal">{{ total_balance|floatformat:1 }}</td>
+                {% endif %}
+                <td data-title="TotalVal">{{ total_valuation|floatformat:1 }}</td>
+                <td></td>
+            </tfoot>
           </tbody>
         </table>
 

@@ -12,6 +12,7 @@ from rest_framework.decorators import api_view
 from rest_framework import status
 from rest_framework.response import Response
 import pickle
+import numpy as np
 
 redis_instance = redis.StrictRedis(host=settings.REDIS_HOST, port=settings.REDIS_PORT, db=0, decode_responses=True)
 
@@ -116,8 +117,12 @@ def update_stock_table(request):
                         stock.valuation = valuation
                         stock.save()
 
+                        total_balance, total_valuation = np.sum([s.balance for s in stock_list]), np.sum([s.valuation for s in stock_list])
+
                         context = {
                             'stock_list': stock_list,
+                            'total_balance': total_balance,
+                            'total_valuation': total_valuation,
                             'today_date': today_date,
                             'add_success_message': add_success_message,
                         }
@@ -167,12 +172,16 @@ def update_stock_table(request):
             stock_list = Stocks.objects.order_by('symbol')[:30]
 
             delete_success_message = "Stock successfully removed from portfolio!"
+            total_balance, total_valuation = np.sum([s.balance for s in stock_list]), np.sum([s.valuation for s in stock_list])
 
             context = {
                 'stock_list': stock_list,
+                'total_balance': total_balance,
+                'total_valuation': total_valuation,
                 'today_date': today_date,
                 'delete_success_message': delete_success_message,
             }
+
             return render(request, 'stockInformation/stocks.html', context)
 
     else:  # if there was no POST request - the whole portfolio should be updated
@@ -211,11 +220,13 @@ def update_stock_table(request):
             stock.valuation = valuation
             stock.save(update_fields=['price', 'balance', 'valuation'])  # do not create new object in db,
             # update current lines
-
-        context = {
+            total_balance, total_valuation = np.sum([s.balance for s in stock_list]), np.sum([s.valuation for s in stock_list])
+            context = {
             'stock_list': stock_list,
+            'total_balance': total_balance,
+            'total_valuation': total_valuation,
             'today_date': today_date
-        }
+            }  
 
         logger.info('Refreshing stock list')
 

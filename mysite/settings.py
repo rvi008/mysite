@@ -26,7 +26,7 @@ SECRET_KEY = '8n^t0mlz$d5mtr4z&s%sqad15)_2=gi^6=+a4&wsbok(x@16xa'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ["192.168.1.107", "127.0.0.1", "183.90.37.158", "58.96.225.46"]
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media/')
 X_FRAME_OPTIONS = 'SAMEORIGIN'
