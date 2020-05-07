@@ -13,6 +13,7 @@ from rest_framework import status
 from rest_framework.response import Response
 import pickle
 import numpy as np
+from django.contrib.auth.decorators import login_required
 
 redis_instance = redis.StrictRedis(host=settings.REDIS_HOST, port=settings.REDIS_PORT, db=0, decode_responses=True)
 
@@ -33,7 +34,7 @@ ch.setFormatter(formatter)
 # add ch to logger
 logger.addHandler(ch)
 
-
+@login_required
 def update_stock_table(request):
     """
     function, that allows to add or remove stock options and displays them in portfolio

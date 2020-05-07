@@ -1,0 +1,16 @@
+{% extends 'base.html' %}
+{% load static %}
+<link rel="shortcut icon" href="{% static 'images/books.png' %}" />
+
+{% block content %}
+  <br>
+  <h1>Log in</h1>
+  <div class="border-top pt-3">
+  <form method="POST" class="site-form" action="{% url 'login' %}">
+    {% csrf_token %}
+    {{ form }}
+    <input type="submit" name="Login">
+  </form>
+  </div>
+
+{% endblock %}

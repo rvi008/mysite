@@ -1,0 +1,12 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h2>Utilisateur déconnecté</h2>
+<div class="border-top pt-3">
+	<small class="text-muted">
+       <a class="ml-2" href="{% url 'login' %}">Se reconnecter</a>
+	</small>
+
+</div>
+
+{% endblock %}
