@@ -1,0 +1,27 @@
+api==0.0.7
+asgiref==3.2.7
+beautifulsoup4==4.9.0
+certifi==2020.4.5.1
+chardet==3.0.4
+Django==3.0.5
+django-summernote==0.8.11.6
+djangorestframework==3.11.0
+idna==2.9
+lxml==4.5.0
+multitasking==0.0.9
+nose==1.3.7
+numpy==1.18.4
+pandas==1.0.3
+phantomjs==1.1.7
+python-dateutil==2.8.1
+pytz==2020.1
+redis==3.5.0
+requests==2.23.0
+selenium==3.141.0
+simplejson==3.17.0
+six==1.14.0
+soupsieve==2.0
+sqlparse==0.3.1
+urllib3==1.25.9
+yahoo-finance==1.4.0
+-e git://github.com/vonHacht/yfinance.git@ea72b48d76785f3160aafdb40a643ab9d41695e5#egg=yfinance
