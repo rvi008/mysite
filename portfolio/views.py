@@ -384,17 +384,25 @@ def analytics(request):
     uri2 = 'data:image/png;base64,' + urllib.parse.quote(string)
 
 
-    portfolios = Portfolio.objects.all()
+    portfolios = Portfolio.objects.all().order_by('-date')
     pf = read_frame(portfolios)
     pf.index = pf["date"]
     pf['valuation'] = pf['valuation'].astype(float)
-    pf["ma"] = pf['valuation'].ewm(com=0.3).mean()
-    plot = pf['valuation'].plot.line(figsize=(11,5), grid=True)
-    plot = pf['ma'].plot.line(linestyle='dashed', marker='x', color='red')
-    plt.legend(bbox_to_anchor=(1, 1),
+    pf["ma"] = pf['valuation'].ewm(com=0.75).mean()
+    plot = pf['valuation'].plot.line(figsize=(11,5), label="valorisation")
+    plot = pf['ma'].plot.line(linestyle='dashed', marker='x', color='red', label="moyenne mobile")
+    monthdiff =  (pf["date"].values.tolist()[0].year - pf["date"].values.tolist()[-1].year) * 12 + (pf["date"].values.tolist()[0].month - pf["date"].values.tolist()[-1].month)
+
+    target = [pf["valuation"].values.tolist()[-1], pf["valuation"].values.tolist()[-1]+ 1200 * monthdiff]
+    daterange = [pf["date"].values.tolist()[-1], pf["date"].values.tolist()[0]]
+    print(daterange)
+
+    plt.plot(daterange, target, color='black', label="cible")
+    plt.legend(bbox_to_anchor=(1, 1.01),
        bbox_transform=plt.gcf().transFigure)
     plt.xticks(rotation=70)
     plt.gcf().subplots_adjust(bottom=0.15)
+    plt.grid(True, animated=True)
     plt.close()
 
     buf2 = io.BytesIO()
