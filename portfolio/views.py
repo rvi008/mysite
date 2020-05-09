@@ -2,7 +2,8 @@ from django.shortcuts import render
 import time
 import decimal
 import logging
-from .models import Stocks
+from .models import Stocks, Portfolio
+from datetime import date, timedelta
 from .forms import AddStockForm
 from portfolio.controllers import *
 import json
@@ -14,6 +15,14 @@ from rest_framework.response import Response
 import pickle
 import numpy as np
 from django.contrib.auth.decorators import login_required
+from django_pandas.io import read_frame
+import pandas as pd
+import matplotlib.pyplot as plt
+import matplotlib as mpl
+import io
+import urllib, base64
+
+mpl.use('agg')
 
 redis_instance = redis.StrictRedis(host=settings.REDIS_HOST, port=settings.REDIS_PORT, db=0, decode_responses=True)
 
@@ -62,31 +71,29 @@ def update_stock_table(request):
                     try:  # try to add stock to portfolio
 
                         if "LU0904783114" in new_stock:
-                            new_stock_name, new_stock_price, currency = retrieve_mslqd(redis_instance)
+                            new_stock_name, new_stock_price, currency, stock_type = retrieve_mslqd(redis_instance)
 
                         elif "LU0" in new_stock:
-                            new_stock_name, new_stock_price, currency = retrieve_bgf(new_stock, redis_instance)
+                            new_stock_name, new_stock_price, currency, stock_type  = retrieve_bgf(new_stock, redis_instance)
 
                         elif "CASH" in new_stock:
                             new_stock_name = new_stock
                             new_stock_price = form.cleaned_data['buying_price']
                             stocks_owned = 1
                             currency = new_stock[-3:].lower()
+                            stock_type = "cash"
 
                         elif "OR" in new_stock:
-                            new_stock_name, new_stock_price, currency = retrieve_gold(new_stock, redis_instance)
+                            new_stock_name, new_stock_price, currency, stock_type = retrieve_gold(new_stock, redis_instance)
 
                         elif "AG" in new_stock:
-                            new_stock_name, new_stock_price, currency = retrieve_silver(new_stock, redis_instance)
+                            new_stock_name, new_stock_price, currency, stock_type  = retrieve_silver(new_stock, redis_instance)
 
                         elif "CL" in new_stock:
-                            new_stock_name, new_stock_price, currency = retrieve_cl(new_stock.replace("CL",""), redis_instance)
-
-                        elif "CRYPTO" in new_stock:
-                            new_stock_name, new_stock_price, currency = retrieve_crypto(redis_instance)
+                            new_stock_name, new_stock_price, currency, stock_type  = retrieve_cl(new_stock.replace("CL",""), redis_instance)
 
                         else:
-                            new_stock_name, new_stock_price, currency = retrieve_yf(new_stock, redis_instance)
+                            new_stock_name, new_stock_price, currency, stock_type  = retrieve_yf(new_stock, redis_instance)
                             
                         stocks_owned = form.cleaned_data['stocks_bought']
                         buying_price = form.cleaned_data['buying_price']
@@ -97,7 +104,9 @@ def update_stock_table(request):
                                              stocks_owned=stocks_owned,
                                              buying_price=buying_price,
                                              balance=0,
-                                             valuation=new_stock_price*stocks_owned
+                                             valuation=new_stock_price*stocks_owned,
+                                             currency = currency,
+                                             asset_type = stock_type
                                              )
                         stock_to_db.save()
 
@@ -188,27 +197,27 @@ def update_stock_table(request):
     else:  # if there was no POST request - the whole portfolio should be updated
 
         stocks = Stocks.objects.all().order_by('symbol')[:30]  # This returns queryset
+        pf, created = Portfolio.objects.get_or_create(date=date.today())
 
         for stock in stocks:
             try:
-
+            
                 if "LU0904783114" in stock.symbol:
-                    _, stock.price, currency = retrieve_mslqd(redis_instance)
+                    _, stock.price, currency, t = retrieve_mslqd(redis_instance)
                 elif "LU0" in stock.symbol:
-                    _, stock.price, currency = retrieve_bgf(stock.symbol, redis_instance)
+                    _, stock.price, currency, t = retrieve_bgf(stock.symbol, redis_instance)
                 elif "CASH" in stock.symbol:
-                    currency = stock.symbol[-3:].lower()
+                    currency, t = stock.symbol[-3:].lower(), "cash"
                 elif "OR" in stock.symbol:
-                    _, stock.price, currency = retrieve_gold(stock.symbol, redis_instance)
+                    _, stock.price, currency, t = retrieve_gold(stock.symbol, redis_instance)
                 elif "AG" in stock.symbol:
-                    _, stock.price, currency = retrieve_silver(stock.symbol, redis_instance)
+                    _, stock.price, currency, t = retrieve_silver(stock.symbol, redis_instance)
                 elif "CL" in stock.symbol:
-                    _, stock.price, currency = retrieve_cl(stock.symbol.replace("CL",""), redis_instance)
+                    _, stock.price, currency, t = retrieve_cl(stock.symbol.replace("CL",""), redis_instance)
                 elif "CRYPTO" in stock.symbol:
-                    _, stock.price, currency = retrieve_crypto(redis_instance)
+                    _, stock.price, currency, t = retrieve_crypto(redis_instance)
                 else:
-                    _, stock.price, currency = retrieve_yf(stock.symbol, redis_instance)
-        
+                    _, stock.price, currency, t = retrieve_yf(stock.symbol, redis_instance)
                 if currency != 'eur':
                     balance_before = (stock.stocks_owned * decimal.Decimal(stock.price)) - (decimal.Decimal(stock.stocks_owned) * decimal.Decimal(stock.buying_price))
                     rate = convert_currency(currency, redis_instance) 
@@ -220,9 +229,13 @@ def update_stock_table(request):
     
                 stock.balance = balance
                 stock.valuation = valuation
-                stock.save(update_fields=['price', 'balance', 'valuation'])  # do not create new object in db,
+                stock.currency = currency
+                stock.save(update_fields=['price', 'balance', 'valuation', 'currency'])  # do not create new object in db,
                 # update current lines
                 total_balance, total_valuation = np.sum([s.balance for s in stock_list]), np.sum([s.valuation for s in stock_list])
+                pf.valuation = total_valuation
+                pf.save(update_fields=['valuation'])
+
                 context = {
                 'stock_list': stock_list,
                 'total_balance': total_balance,
@@ -230,9 +243,8 @@ def update_stock_table(request):
                 'today_date': today_date
                     }      
                 logger.info('Refreshing stock list')
-
-            except: #If one update fails, abort the update process and retrieve from DB
-                logger.info('Update Failed for %s' % str(stock.symbol))
+            except  Exception as es: #If one update fails, abort the update process and retrieve from DB
+                logger.info('Update Failed for %s cause %s' % (str(stock.symbol), str(es)))
                 
         return render(request, 'stockInformation/stocks.html', context)
 
@@ -317,3 +329,78 @@ def manage_item(request, *args, **kwargs):
                     'msg': 'Not found'
                 }
                 return Response(response, status=404)
+
+@login_required
+def analytics(request):
+    stock_list = Stocks.objects.all().order_by('symbol')[:50]
+
+    df = read_frame(stock_list)[["currency","valuation"]]
+    gp = df.groupby("currency").agg({"valuation":"sum"})
+    names = gp.index.tolist()
+    gpp = gp['valuation'] / gp['valuation'].sum()
+    new = pd.DataFrame()
+    new["valuation"], new.index  = gpp.astype(float), names
+    explode = [0 for i in range(len(names))]
+    explode[0] = 0.1
+    plot = new.plot.pie(y="valuation", use_index=False,xticks=None, figsize=(11,5), explode=explode, shadow=True, radius=1.2, autopct="%1.1f")
+    plt.legend(bbox_to_anchor=(1, 1),
+           bbox_transform=plt.gcf().transFigure)
+    plt.axis('off')
+    plt.close()
+
+    buf = io.BytesIO()
+    plot.figure.savefig(buf, format='png')
+    buf.seek(0)
+    string = base64.b64encode(buf.read())
+    uri1 = 'data:image/png;base64,' + urllib.parse.quote(string)
+
+    df = read_frame(stock_list)[["asset_type","valuation"]]
+    gp = df.groupby("asset_type").agg({"valuation":"sum"})
+    names = gp.index.tolist()
+    gpp = gp['valuation'] / gp['valuation'].sum()
+    new = pd.DataFrame()
+    new["valuation"], new.index  = gpp.astype(float), names
+    explode = [0 for i in range(len(names))]
+    explode[3] = 0.1
+    plot = new.plot.pie(y="valuation", use_index=False,xticks=None, figsize=(11,5), explode=explode, shadow=True, radius=1.2, autopct="%1.1f")
+    plt.legend(bbox_to_anchor=(1, 1),
+           bbox_transform=plt.gcf().transFigure)
+    plt.axis('off')
+    plt.close()
+
+    buf1 = io.BytesIO()
+    plot.figure.savefig(buf1, format='png')
+    buf1.seek(0)
+    string = base64.b64encode(buf1.read())
+    uri2 = 'data:image/png;base64,' + urllib.parse.quote(string)
+
+
+    portfolios = Portfolio.objects.all()
+    pf = read_frame(portfolios)
+    pf.index = pf["date"]
+    pf['valuation'] = pf['valuation'].astype(float)
+    pf["ma"] = pf['valuation'].ewm(com=0.3).mean()
+    plot = pf['valuation'].plot.line(figsize=(11,5), grid=True)
+    plot = pf['ma'].plot.line(linestyle='dashed', marker='x', color='red')
+    plt.legend(bbox_to_anchor=(1, 1),
+       bbox_transform=plt.gcf().transFigure)
+    plt.xticks(rotation=70)
+    plt.gcf().subplots_adjust(bottom=0.15)
+    plt.close()
+
+    buf2 = io.BytesIO()
+    plot.figure.savefig(buf2, format='png')
+    buf2.seek(0)
+    string = base64.b64encode(buf2.read())
+    uri3 = 'data:image/png;base64,' + urllib.parse.quote(string)
+
+    return render(request, 'stockInformation/analyses.html', {'image1':uri1, 'image2':uri2, 'image3':uri3})
+
+
+
+
+
+
+
+
+

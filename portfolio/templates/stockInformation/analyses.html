@@ -1,0 +1,29 @@
+{% extends 'stockinformation/base.html' %}
+{% block header %}
+<div class="container">
+    <div class="row">
+        <div class="col-md-16 left">
+        	<br>
+            <h1 class="display-3">Analyse du portefeuille</h1>
+        </div>
+  </div>
+</divs>
+{% endblock %}
+
+{% block content %}
+<div class="chart">
+	<h3>Répartition par devises</h3>
+	<div class="container"><img src="{{ image1 }}"></div>
+</div>
+<div class="chart">
+	<h3>Répartition par classe d'actif</h3>
+	<div class="container"><img src="{{ image2 }}"></div>
+</div>
+<div class="chart">
+    <h3>Evolution du portefeuille</h3>
+    <div class="container"><img src="{{ image3 }}"></div>
+</div>
+<footer>
+  <p>&copy; Raphaël Vignes</p>
+</footer>
+{% endblock %}

@@ -14,7 +14,8 @@ urlpatterns = [
     path(r'', views.update_stock_table, name='update_stock_table'),
     path(r'stocks', views.update_stock_table, name='update_stock_table'),
     path(r'login/', auth_views.LoginView.as_view(template_name='stockInformation/login.html'), name='login'),
-    path(r'logout/', auth_views.LogoutView.as_view(template_name='stockInformation/logout.html'), name='logout')
+    path(r'logout/', auth_views.LogoutView.as_view(template_name='stockInformation/logout.html'), name='logout'),
+    path(r'analyses/', views.analytics, name='analyses')
 
 ]
 

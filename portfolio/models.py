@@ -11,6 +11,12 @@ class Stocks(models.Model):
     buying_price = models.DecimalField(max_digits=10, decimal_places=4)
     balance = models.DecimalField(max_digits=10, decimal_places=2)
     valuation = models.DecimalField(max_digits=10, decimal_places=2, default=0.0000)
+    currency = models.CharField(max_length=5, default='eur')
+    asset_type = models.CharField(max_length=10, default='equity')
 
     def __str__(self):
         return self.symbol, self.name, self.price, self.change
+
+class Portfolio(models.Model):
+    valuation = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+    date = models.DateField(auto_now=True)
