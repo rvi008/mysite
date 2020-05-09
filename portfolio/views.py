@@ -151,12 +151,14 @@ def update_stock_table(request):
                         return render(request, 'stockInformation/stocks.html', context)
 
                 else:  # if symbol is already in your portfolio
-                    stock_exists_message = "Stock is already in your portfolio!"
+                    if 'CASH' in new_stock:
+                        logging.info("Updating a current account")
+                        update_cash_accounts(new_stock, form)
+                        stock_list = Stocks.objects.order_by('symbol')[:30]
 
                     context = {
                         'stock_list': stock_list,
                         'today_date': today_date,
-                        'stock_exists_message': stock_exists_message,
                     }
                     return render(request, 'stockInformation/stocks.html', context)
 
@@ -247,6 +249,13 @@ def update_stock_table(request):
                 logger.info('Update Failed for %s cause %s' % (str(stock.symbol), str(es)))
                 
         return render(request, 'stockInformation/stocks.html', context)
+
+
+def update_cash_accounts(symbol, form):
+    stock = Stocks.objects.get(symbol=symbol)
+    stock.price = form.cleaned_data['buying_price']
+    stock.buying_price = stock.price
+    stock.save(update_fields=["price", "buying_price"])
 
 @api_view(['GET', 'POST'])
 def manage_items(request, *args, **kwargs):

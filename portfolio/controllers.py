@@ -84,11 +84,11 @@ def retrieve_bgf(isin, redis_instance):
     else:
         driver = webdriver.Firefox(executable_path=os.getcwd()+"/geckodriver", options=options)
         driver.get(BGF[isin])
-        WebDriverWait(driver, 5)
+        WebDriverWait(driver, 2)
         stock_name = driver.find_element_by_xpath("//div[contains(@class, 'has-share-class-selector')]").text
-        WebDriverWait(driver, 5)
+        WebDriverWait(driver, 2)
         results = driver.find_elements_by_xpath("//*[@class='header-nav-data']")[0].text.split(" ")
-        WebDriverWait(driver, 5)
+        WebDriverWait(driver, 2)
         driver.quit()
         stock_price, stock_currency, stock_type = results[1], results[0].lower(), "equity"
         redis_instance.hset(isin, "name", stock_name, {"price":stock_price, "currency":stock_currency, "type":stock_type})
@@ -107,11 +107,11 @@ def retrieve_silver(coin, redis_instance):
         logger.info("Retrieving %s's price from website" % coin)
         url = SILVER_URL[coin]
         driver.get(url)
-        WebDriverWait(driver, 5)
+        WebDriverWait(driver, 2)
         driver.execute_script("window.scrollTo(0, 500)")
-        WebDriverWait(driver, 5)
+        WebDriverWait(driver, 2)
         results = driver.find_element_by_xpath("//html").text
-        WebDriverWait(driver, 5)
+        WebDriverWait(driver, 2)
         splitted = results.split("\n")
         temp_dict = {}
         for i,r  in enumerate(splitted):
@@ -126,7 +126,7 @@ def retrieve_silver(coin, redis_instance):
                         stock_name, stock_price, stock_currency = SILVER_COINS[coin], float(parsed[0]), parsed[1]
                         stock_type = "metal"
                         redis_instance.hset(coin, "name", stock_name, {"price":stock_price, "currency":stock_currency, "type":stock_type})
-                        redis_instance.expire(stock_name, 10000)
+                        redis_instance.expire(coin, 10000)
                         break
             driver.quit()
         return stock_name, stock_price, stock_currency, stock_type
@@ -142,26 +142,26 @@ def retrieve_gold(coin, redis_instance):
         logger.info("Retrieving %s's price from Website" % coin)
         driver = webdriver.Firefox(executable_path=os.getcwd()+'/geckodriver', options=options)
         driver.get(GOLD_URL)
-        WebDriverWait(driver, 5)
+        WebDriverWait(driver, 2)
         driver.execute_script("window.scrollTo(0, 1000)")
-        WebDriverWait(driver, 5)
+        WebDriverWait(driver, 2)
         driver.find_element_by_xpath("//tr[@class='category']").click()
-        WebDriverWait(driver, 5)
+        WebDriverWait(driver, 2)
         driver.execute_script("window.scrollTo(0, 1500)")
-        WebDriverWait(driver, 5)
+        WebDriverWait(driver, 2)
         driver.find_element_by_xpath("//tr[@class='see-more']").click()
-        WebDriverWait(driver, 5)
+        WebDriverWait(driver, 2)
         driver.execute_script("window.scrollTo(0, 2000)")
-        WebDriverWait(driver, 5)
+        WebDriverWait(driver, 2)
         results = driver.find_element_by_xpath("//tbody").text
-        WebDriverWait(driver, 5)
+        WebDriverWait(driver, 2)
         driver.quit()
 
         for r in results.split("\n"):
             if GOLD_COINS[coin] in r:
                 stock_name, stock_price, stock_currency = GOLD_COINS[coin], float(r.split(" ")[-1].replace(',','')), r.split(" ")[-2].lower()
                 redis_instance.hset(coin, "name", stock_name, {"price":stock_price, "currency":stock_currency, "type":"metal"})
-                redis_instance.expire(stock_name, 10000)
+                redis_instance.expire(coin, 10000)
         return stock_name, stock_price, stock_currency, "metal"
 
 def retrieve_cl(platform, redis_instance):
@@ -181,7 +181,7 @@ def retrieve_cl(platform, redis_instance):
         driver.find_element_by_id(navigation["login"]["desc_values"][0]).send_keys(username)
         driver.find_element_by_id(navigation["login"]["desc_values"][1]).send_keys(password)
         driver.find_element_by_id(navigation["login"]["desc_values"][2]).click()
-        WebDriverWait(driver, 5)
+        WebDriverWait(driver, 2)
 
         if navigation["home"]["descriptor"] == "id":
             nav_func = driver.find_element_by_id
@@ -192,11 +192,11 @@ def retrieve_cl(platform, redis_instance):
                 nav_func(navigation["home"]["desc_values"][0]).click()
             except:
                 driver.refresh()
-                WebDriverWait(driver, 5)
+                WebDriverWait(driver, 2)
                 continue
-        WebDriverWait(driver, 5)
+        WebDriverWait(driver, 2)
         raw = [e.text for e in driver.find_elements_by_xpath(navigation["extract"]["desc_values"][0])][navigation["extract"]["item_num"]]
-        WebDriverWait(driver, 5)
+        WebDriverWait(driver, 2)
         driver.quit()
         stock_type = "bond"
         stock_name, stock_price, stock_currency = platform, float(raw.split(" ")[0].replace(",",".")), raw.split(" ")[1].replace("€","eur")
