@@ -22,6 +22,6 @@ simplejson==3.17.0
 six==1.14.0
 soupsieve==2.0
 sqlparse==0.3.1
-urllib3==1.25.9
+urllib3==1.26.5
 yahoo-finance==1.4.0
 -e git://github.com/vonHacht/yfinance.git@ea72b48d76785f3160aafdb40a643ab9d41695e5#egg=yfinance
